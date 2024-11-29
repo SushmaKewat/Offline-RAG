@@ -22,6 +22,10 @@ from llama_index.core import SQLDatabase
 from sqlalchemy import create_engine
 from llama_index.core.query_engine import NLSQLTableQueryEngine
 
+from llama_index.llms.huggingface import HuggingFaceLLM
+from llama_index.core import Settings
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+
 def save_uploaded_file(uploaded_file, directory):
     file_path = os.path.join(directory, uploaded_file.name)
     with open(file_path, "wb") as f:
@@ -55,22 +59,22 @@ def process_pdf(pdf_path):
 
 def build_sql_index():
     # Load structured data into SQLite database
-    transaction_data = pd.read_csv("data/transaction_scores_processed_5k.csv")
-    accountdoc_data = pd.read_csv("data/account_scores_processed.csv")
+    transaction_data = pd.read_csv("data/transaction_scores_processed.csv")
+    # accountdoc_data = pd.read_csv("data/account_scores_processed.csv")
 
     conn = sqlite3.connect("SCORES_5k.db")
 
     transaction_data.to_sql("transaction_score", conn, if_exists="replace", index=False)
-    accountdoc_data.to_sql("accountdoc_score", conn, if_exists="replace", index=False)
+    # accountdoc_data.to_sql("accountdoc_score", conn, if_exists="replace", index=False)
 
     print("Structured data loaded into SQLite database.")
     
     engine = create_engine("sqlite:///SCORES.db") 
 
-    sql_db = SQLDatabase(engine, include_tables=["transaction_score", "accountdoc_score"]) 
+    sql_db = SQLDatabase(engine, include_tables=["transaction_score"]) 
     sql_query_engine = NLSQLTableQueryEngine(
     sql_database=sql_db,
-    tables=["transaction_score", "accountdoc_score"],
+    tables=["transaction_score"],
     )
     
     return sql_query_engine
@@ -153,16 +157,11 @@ def main():
     csv_files = st.file_uploader("Upload CSV files", type=["csv"], accept_multiple_files=True)
     pdf_file = st.file_uploader("Upload a PDF file", type="pdf")
 
-    # File storage directory
-    if not os.path.exists("data"):
-        os.makedirs("data")
-        
-    if not os.path.exists("docs"):
-        os.makedirs("docs")
-
     # Process and store files
     if csv_files:
         st.write("Processing CSV files...")
+        if not os.path.exists("data"):
+            os.makedirs("data")
         for csv_file in csv_files:
             try:
                 csv_path = save_uploaded_file(csv_file, "data")
@@ -171,12 +170,19 @@ def main():
                 st.error(f"Error processing {csv_file.name}: {e}")
     if pdf_file:
         st.write("Processing PDF file...")
+        if not os.path.exists("docs"):
+            os.makedirs("docs")
         pdf_path = save_uploaded_file(pdf_file, "docs")
         process_pdf(pdf_path)
 
     # Button to create database and vector store
     if st.button("Create Database and Vector Store"):
-        create_vector_store("data")
+        sql_query_engine = build_sql_index()
+        vector_index = build_vector_index()
+        sql_tool = get_sql_tool(sql_query_engine)
+        vector_tool = get_vector_tool(vector_index)
+        query_engine = create_query_engine(sql_tool, vector_tool)
+        st.session_state["query_engine"] = query_engine
 
     # Chat interface
     if os.path.exists("vectorstore"):
@@ -188,17 +194,7 @@ def main():
 
         if user_input:
             try:
-                vector_store = FAISS.load_local("vectorstore", OpenAIEmbeddings())
-                retriever = vector_store.as_retriever()
-                chat_model = ChatOpenAI()
-
-                qa_chain = ConversationalRetrievalChain.from_llm(
-                    llm=chat_model,
-                    retriever=retriever
-                )
-
-                response = qa_chain.run({"question": user_input, "chat_history": st.session_state["messages"]})
-
+                response = st.session_state["query_engine"].query(user_input)
                 st.session_state["messages"].append((user_input, response))
                 st.write(f"LLM: {response}")
             except Exception as e:
@@ -206,5 +202,8 @@ def main():
                 
 
 if __name__ == "__main__":
-    
+    embeddings = HuggingFaceEmbedding(model_name="microsoft/Phi-3-mini-4k-instruct")
+    Settings.embed_model = embeddings
+    Settings.llm = HuggingFaceLLM(model_name="microsoft/Phi-3-mini-4k-instruct",
+                                tokenizer_name="microsoft/Phi-3-mini-4k-instruct" )
     main()
