@@ -151,6 +151,11 @@ def create_query_engine(sql_tool, vector_tool):
     return query_engine
         
 def main():
+    # embeddings = HuggingFaceEmbedding(model_name="microsoft/Phi-3-mini-4k-instruct")
+    # Settings.embed_model = embeddings
+    # Settings.llm = HuggingFaceLLM(model_name="microsoft/Phi-3-mini-4k-instruct",
+    #                             tokenizer_name="microsoft/Phi-3-mini-4k-instruct" )
+    
     st.title("LLM Chat Interface with File Uploads")
 
     # File uploads
@@ -202,8 +207,4 @@ def main():
                 
 
 if __name__ == "__main__":
-    embeddings = HuggingFaceEmbedding(model_name="microsoft/Phi-3-mini-4k-instruct")
-    Settings.embed_model = embeddings
-    Settings.llm = HuggingFaceLLM(model_name="microsoft/Phi-3-mini-4k-instruct",
-                                tokenizer_name="microsoft/Phi-3-mini-4k-instruct" )
     main()
