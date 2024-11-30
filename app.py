@@ -186,8 +186,7 @@ def main():
         query_engine = create_query_engine(sql_tool, vector_tool)
         st.session_state["query_engine"] = query_engine
 
-    # Chat interface
-    if os.path.exists("vectorstore"):
+    if "query_engine" in st.session_state:
         st.write("### Chat with LLM")
         user_input = st.text_input("You:", "")
 
