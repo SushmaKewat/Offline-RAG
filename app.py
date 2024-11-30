@@ -45,7 +45,7 @@ def preprocess_csv(csv_path):
     return csv_file_path
 
 def process_pdf(pdf_path):
-    faiss_index = faiss.IndexFlatIP(3072)
+    faiss_index = faiss.IndexFlatIP(2048)
 
     documents = SimpleDirectoryReader("docs").load_data()
 
@@ -62,7 +62,7 @@ def build_sql_index():
     transaction_data = pd.read_csv("data/transaction_scores_processed.csv")
     # accountdoc_data = pd.read_csv("data/account_scores_processed.csv")
 
-    conn = sqlite3.connect("SCORES_5k.db")
+    conn = sqlite3.connect("SCORES.db")
 
     transaction_data.to_sql("transaction_score", conn, if_exists="replace", index=False)
     # accountdoc_data.to_sql("accountdoc_score", conn, if_exists="replace", index=False)
@@ -151,10 +151,10 @@ def create_query_engine(sql_tool, vector_tool):
     return query_engine
         
 def main():
-    embeddings = HuggingFaceEmbedding(model_name="microsoft/Phi-3-mini-4k-instruct")
+    embeddings = HuggingFaceEmbedding(model_name="meta-llama/Llama-3.2-1B")
     Settings.embed_model = embeddings
-    Settings.llm = HuggingFaceLLM(model_name="microsoft/Phi-3-mini-4k-instruct",
-                                tokenizer_name="microsoft/Phi-3-mini-4k-instruct" )
+    Settings.llm = HuggingFaceLLM(model_name="meta-llama/Llama-3.2-1B",
+                                tokenizer_name="meta-llama/Llama-3.2-1B" )
     
     st.title("LLM Chat Interface with File Uploads")
 
