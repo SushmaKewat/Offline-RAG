@@ -45,7 +45,7 @@ def preprocess_csv(csv_path):
     return csv_file_path
 
 def process_pdf(pdf_path):
-    faiss_index = faiss.IndexFlatIP(3072)
+    faiss_index = faiss.IndexFlatIP(2048)
 
     documents = SimpleDirectoryReader("docs").load_data()
 
@@ -204,11 +204,11 @@ def main():
 
 if __name__ == "__main__":
     if "embed_model" not in st.session_state:
-        embeddings = HuggingFaceEmbedding(model_name="microsoft/Phi-3-mini-4k-instruct")
+        embeddings = HuggingFaceEmbedding(model_name="meta-llama/Llama-3.2-1B")
         st.session_state["embed_model"] = embeddings
     
     if "llm" not in st.session_state:    
-        llm = HuggingFaceLLM(model_name="microsoft/Phi-3-mini-4k-instruct",
-                                    tokenizer_name="microsoft/Phi-3-mini-4k-instruct" )
+        llm = HuggingFaceLLM(model_name="meta-llama/Llama-3.2-1B",
+                                    tokenizer_name="meta-llama/Llama-3.2-1B" )
         st.session_state["llm"] = llm
     main()
