@@ -25,6 +25,8 @@ from llama_index.core.query_engine import NLSQLTableQueryEngine
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.core import Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.tools import QueryEngineTool
+
 
 def save_uploaded_file(uploaded_file, directory):
     file_path = os.path.join(directory, uploaded_file.name)
@@ -45,7 +47,7 @@ def preprocess_csv(csv_path):
     return csv_file_path
 
 def process_pdf(pdf_path):
-    faiss_index = faiss.IndexFlatIP(2304)
+    faiss_index = faiss.IndexFlatIP(2048)
 
     documents = SimpleDirectoryReader("docs").load_data()
 
@@ -138,7 +140,7 @@ def get_vector_tool(index):
     vector_tool = QueryEngineTool.from_defaults(
     query_engine=retriever_query_engine,
     description=(
-        f"Useful for answering semantic questions related to the Risk framework"
+        f"Useful for answering semantic questions related to the Risk framework which containes information avout the AI model, Stat model and Rules framework"
     ),
     )
     return vector_tool
@@ -196,6 +198,7 @@ def main():
         if user_input:
             try:
                 response = st.session_state["query_engine"].query(user_input)
+                print(response)
                 st.session_state["messages"].append((user_input, response))
                 st.write(f"LLM: {response}")
             except Exception as e:
@@ -204,11 +207,12 @@ def main():
 
 if __name__ == "__main__":
     if "embed_model" not in st.session_state:
-        embeddings = HuggingFaceEmbedding(model_name="google/gemma-2-2b")
+        embeddings = HuggingFaceEmbedding(model_name="M4-ai/NeuralReyna-Mini-1.8B-v0.3", trust_remote_code=True)
         st.session_state["embed_model"] = embeddings
     
     if "llm" not in st.session_state:    
-        llm = HuggingFaceLLM(model_name="google/gemma-2-2b",
-                                    tokenizer_name="google/gemma-2-2b" )
+        llm = HuggingFaceLLM(model_name="M4-ai/NeuralReyna-Mini-1.8B-v0.3",
+                                    tokenizer_name="M4-ai/NeuralReyna-Mini-1.8B-v0.3")
+    
         st.session_state["llm"] = llm
     main()
