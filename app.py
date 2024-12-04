@@ -1,3 +1,9 @@
+import logging
+import sys
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
+
 import streamlit as st
 import os
 import sqlite3
@@ -18,7 +24,8 @@ from llama_index.core import (
     StorageContext,
 )
 from llama_index.vector_stores.faiss import FaissVectorStore
-from llama_index.core import SQLDatabase
+from llama_index.core import SQLDatabase, PromptTemplate
+from llama_index.core.prompts import PromptType
 from sqlalchemy import create_engine
 from llama_index.core.query_engine import NLSQLTableQueryEngine
 
@@ -71,12 +78,45 @@ def build_sql_index():
 
     print("Structured data loaded into SQLite database.")
     
+    # declare prompts
+    # TEXT_TO_SQL_TMPL = (
+    #     "Given an input question, first create a syntactically correct SQL "
+    #     "query to run, then look at the results of the query and return the answer. "
+    #     "You can order the results by a relevant column to return the most "
+    #     "interesting examples in the database.\n\n"
+    #     "Never query for all the columns from a specific table, only ask for a "
+    #     "few relevant columns given the question.\n\n"
+    #     "Pay attention to use only the column names that you can see in the schema "
+    #     "description. "
+    #     "Be careful to not query for columns that do not exist. "
+    #     # "Pay attention to which column is in which table. "
+    #     "Also, qualify column names with the table name when needed. \n"
+    #     "If needing to group on Columns use the join function \n"
+    #     "You are required to use the following format, each taking one line:\n\n"
+    #     "Question: Question here\n"
+    #     "SQLQuery: SQL Query to run\n"
+    #     "SQLResult: Result of the SQLQuery\n"
+    #     "Answer: Final answer here\n\n"
+    #     "Only use tables listed below.\n"
+    #     "{schema}\n\n"
+    #     "Question: {query_str}\n"
+    #     "SQLQuery: "
+    # )
+
+    # TEXT_TO_SQL_PROMPT = PromptTemplate(
+    #     TEXT_TO_SQL_TMPL,
+    #     prompt_type=PromptType.TEXT_TO_SQL,
+    # )
+    
     engine = create_engine("sqlite:///SCORES.db") 
 
-    sql_db = SQLDatabase(engine, include_tables=["transaction_score"]) 
+    sql_db = SQLDatabase(engine, include_tables=["transaction_score"], view_support=True) 
+    
     sql_query_engine = NLSQLTableQueryEngine(
     sql_database=sql_db,
     tables=["transaction_score"],
+    # text_to_sql_prompt=TEXT_TO_SQL_PROMPT,
+    verbose=True
     )
     
     return sql_query_engine
@@ -106,8 +146,8 @@ def get_sql_tool(sql_query_engine):
         query_engine=sql_query_engine,
         description=(
             "Useful for translating a natural language query into a SQL query over"
-            " 2 tables namely transaction_score and accountdoc_score."
-            " The tables contain the risk scores of transactions and account documents."
+            " a table namely transaction_score "
+            " The table contain the risk scores of transactions."
             " There are blended, ai, stat and rules risk scores along with conrol deviation " 
             "and monitoring deviation reasons for each transaction."
         ),
