@@ -50,7 +50,7 @@ def main():
     if st.button("Start chatting"):
         print(csv_file)
         df = pd.read_csv("data/transaction_scores_processed.csv")
-        query_engine = PandasQueryEngine(df=df, verbose=True) #,synthesize_response=True)
+        query_engine = PandasQueryEngine(df=df, verbose=True ,synthesize_response=True)
         st.session_state["query_engine"] = query_engine
 
     if "query_engine" in st.session_state:
