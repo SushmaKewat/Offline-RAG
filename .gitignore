@@ -2,3 +2,5 @@ data
 docs
 storage
 SCORES.db
+chroma.sqlite3
+__pychache__

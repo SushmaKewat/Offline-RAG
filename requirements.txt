@@ -8,3 +8,4 @@ llama-index-vector-stores-faiss==0.3.0
 llama_index_llms_huggingface
 llama_index_embeddings_huggingface
 llama-index-experimental
+vanna[chromadb,ollama]
